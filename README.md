@@ -1,40 +1,38 @@
-# 🌍 SismoTracker Pro - Monitor Sísmico en Tiempo Real Personalizable
+# DetectorDeTemblores 🌍
 
-Una aplicación web interactiva, moderna y personalizable para monitorear temblores y terremotos en todo el mundo en tiempo real con datos oficiales del **USGS (Servicio Geológico de los Estados Unidos)**.
+Monitor de sismos y terremotos en tiempo real con mapa interactivo y alertas.
 
-Desarrollada para ser alojada de forma 100% gratuita en **GitHub Pages** sin configuraciones de backend ni instalación de dependencias de compilación.
+👉 **Pruébalo acá:** [https://spektra242.github.io/DetectorDeTemblores/](https://spektra242.github.io/DetectorDeTemblores/)
 
 ---
 
-## 🎨 Opciones de Personalización Integradas
+## De qué trata
 
-La aplicación cuenta con un **Panel de Personalización (`⚙️ Personalizar`)** integrado directamente en la interfaz que guarda tus elecciones en el navegador (`localStorage`):
+Hice esta web para poder revisar sismos recientes en cualquier parte del mundo de forma rápida y sin publicidad ni registros. Los datos se obtienen directamente de los feeds públicos del **USGS (Servicio Geológico de EE.UU.)** y se refrescan automáticamente cada minuto.
 
-1. **🎨 Temas Visuales:**
-   - ⚡ **Cyberpunk Neón** (predeterminado): Fondo negro profundo, acentos en azul eléctrico, cian y magenta fosforescente con efectos de resplandor.
-   - ⬛ **Grafito Minimalista**: Tonos neutros, grises oscuros y estética técnica limpia.
-   - 🎯 **Radar Táctico**: Verde militar fosforescente y estilo de centro de comando de defensa.
-   - ☀️ **Modo Claro**: Fondo blanco y contraste optimizado para lectura diurna.
+## Lo que tiene
 
-2. **📍 Geolocalización & Filtro por Distancia:**
-   - Detección automática por GPS de tu ubicación actual.
-   - Marcador animado tipo radar sobre tu ciudad.
-   - Medición exacta en kilómetros (o millas) de la distancia entre cada epicentro y tu ubicación actual (*"📍 a 180 km de ti"*).
-   - Filtro de radio: Ver solo sismos a menos de **250 km**, **500 km**, **1.000 km**, **2.500 km** o el mundo entero.
-   - Ordenar sismos por proximidad ("Más cercano a mí").
+- **Mapa en vivo (Leaflet):** Marcadores con tamaño y color según la magnitud del temblor, más las líneas de fallas y placas tectónicas del planeta.
+- **Cálculo de distancia por GPS:** Si le das permiso de ubicación, calcula a cuántos kilómetros de ti ocurrió cada sismo y te permite filtrar solo los cercanos (ej. a menos de 500 km).
+- **Filtros útiles:** Por período (última hora, 24 horas, semana), magnitud mínima (M 2.5+, 4.5+, 6.0+) y buscador por texto (ej. "Chile", "México", "Japón").
+- **Alertas sonoras:** Incluye sintetizador de audio (alarma o campanilla) si se detecta un sismo fuerte (M 5.0+).
+- **Temas:** Viene con tema oscuro/neón por defecto, pero tiene selector para cambiar a modo grafito, táctico o claro.
+- **Funciona en celular y PC:** Interfaz adaptable con vista de mapa y lista.
 
-3. **🔊 Alertas Sonoras y Sintetizador de Audio:**
-   - Generador nativo Web Audio API (sin archivos de audio pesados).
-   - 3 tipos de sonido seleccionables:
-     - 🚨 **Alarma Sísmica:** Dos tonos alternantes de alerta temprana.
-     - 🔔 **Campanilla Zen:** Acorde armónico sutil y agradable.
-     - ⚡ **Sintetizador Cyberpunk:** Barrido de frecuencia futurista.
-   - Control de volumen ajustable y botón para probar el sonido.
-   - Umbral de magnitud para activar la alarma ($M \ge 4.0$, $5.0$ o $6.0$).
+## Tecnologías
 
-4. **📲 Notificaciones Push en Escritorio:**
-   - Alertas nativas del navegador cuando se detecte un nuevo sismo de magnitud relevante, incluso con la pestaña en segundo plano.
+No usa Node ni herramientas de compilación pesadas; corre directo en el navegador:
 
-5. **📏 Unidades y Frecuencia de Refresco:**
-   - Cambia entre **Kilómetros (km)** y **Millas (mi)**.
-   - Intervalos de sincronización automática: cada **30s**, **60s**, **120s** o modo manual.
+- **HTML5 + JavaScript vanilla**
+- **Tailwind CSS** (vía CDN)
+- **Leaflet.js** con capas base de Esri Canvas (sin marcas de agua)
+- **API GeoJSON de USGS**
+
+## Probarlo en local
+
+No hay que instalar nada. Solo clona el repo (o descarga el zip) y abre `index.html`:
+
+```bash
+git clone https://github.com/Spektra242/DetectorDeTemblores.git
+cd DetectorDeTemblores
+# Abre index.html con doble clic en tu navegador
