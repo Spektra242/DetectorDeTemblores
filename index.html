@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SismoTracker - Monitor Sísmico en Tiempo Real</title>
+  <meta name="description" content="Monitor interactivo de terremotos y temblores en tiempo real con datos oficiales del USGS, mapas temáticos y alertas personalizadas.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22><text y=%2226%22 font-size=%2226%22>⚡</text></svg>">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            neon: {
+              cyan: '#00f2fe',
+              magenta: '#d946ef',
+              pink: '#ec4899',
+              green: '#38ef7d',
+              amber: '#f59e0b',
+              red: '#ff0844'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet.js CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- Estilos Personalizados y Temas -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="h-full flex flex-col overflow-hidden font-sans select-none antialiased theme-cyberpunk bg-slate-950 text-slate-100">
+
+  <!-- ================= ENCABEZADO SUPERIOR ================= -->
+  <header class="h-16 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-4 flex items-center justify-between z-30 shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-sky-600 to-fuchsia-600 shadow-lg shadow-cyan-500/20 text-white font-bold text-xl">
+        ⚡
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
+            <span>SismoTracker</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">PRO</span>
+          </h1>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
+            EN VIVO
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <p class="text-[11px] text-slate-400 hidden sm:block">Datos oficiales USGS</p>
+          <span class="text-slate-600 hidden sm:inline">•</span>
+          <span id="gps-status-indicator" class="text-[10px] text-slate-500 font-medium">Iniciando GPS...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Regiones Rápidas (Desktop) -->
+    <div class="hidden xl:flex items-center gap-1.5 bg-slate-950/60 p-1 rounded-xl border border-slate-800">
+      <button data-region="global" class="px-2.5 py-1 text-xs rounded-lg font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 transition-smooth">
+        🌍 Global
+      </button>
+      <button data-region="sudamerica" class="px-2.5 py-1 text-xs rounded-lg font-medium bg-slate-800/80 text-slate-400 border border-slate-700/60 hover:text-white transition-smooth">
+        🇨🇱 Sudamérica
+      </button>
+      <button data-region="mexico" class="px-2.5 py-1 text-xs rounded-lg font-medium bg-slate-800/80 text-slate-400 border border-slate-700/60 hover:text-white transition-smooth">
+        🇲🇽 México & CA
+      </button>
+      <button data-region="japon" class="px-2.5 py-1 text-xs rounded-lg font-medium bg-slate-800/80 text-slate-400 border border-slate-700/60 hover:text-white transition-smooth">
+        🇯🇵 Japón / Asia
+      </button>
+      <button data-region="usa_west" class="px-2.5 py-1 text-xs rounded-lg font-medium bg-slate-800/80 text-slate-400 border border-slate-700/60 hover:text-white transition-smooth">
+        🇺🇸 Costa Oeste
+      </button>
+    </div>
+
+    <!-- Acciones y Controles -->
+    <div class="flex items-center gap-2">
+      <!-- Estado de actualización y countdown -->
+      <div class="hidden md:flex flex-col items-end text-right">
+        <span id="last-updated-text" class="text-[11px] text-slate-400 font-mono">Actualizado: --:--:--</span>
+        <div class="flex items-center gap-1 text-[10px] text-slate-500 font-medium">
+          <span>Refresco:</span>
+          <span id="refresh-countdown" class="font-mono text-cyan-400 font-bold">60s</span>
+        </div>
+      </div>
+
+      <!-- Botón de refresco manual -->
+      <button id="refresh-btn" title="Actualizar datos ahora"
+              class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/60 transition-smooth">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+      </button>
+
+      <!-- Toggle Rápido de Sonido -->
+      <button id="sound-toggle" title="Activar/Silenciar sonido de alertas"
+              class="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-medium bg-slate-800/80 text-slate-400 border border-slate-700/60 hover:text-white transition-smooth">
+        <span class="sound-icon">🔊</span>
+        <span class="sound-text hidden sm:inline">Sonido: ON</span>
+      </button>
+
+      <!-- BOTÓN DE AJUSTES / PERSONALIZACIÓN -->
+      <button id="open-settings-modal" title="Personalizar App (Temas, Sonido, GPS, Unidades)"
+              class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-600/20 border border-cyan-400/30 transition-smooth">
+        <span>⚙️</span>
+        <span class="hidden md:inline">Personalizar</span>
+      </button>
+
+      <!-- Botón Guía/Información -->
+      <button id="open-info-modal" title="Guía Sísmica y Protocolos"
+              class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition-smooth">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= CUERPO PRINCIPAL ================= -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- PANEL LATERAL (LISTA & FILTROS) -->
+    <aside id="sidebar-panel" class="w-full sm:w-96 lg:w-[420px] flex flex-col bg-slate-900 border-r border-slate-800 z-10 shrink-0">
+      
+      <!-- CONTROLES Y FILTROS -->
+      <div class="p-3.5 border-b border-slate-800/80 space-y-2.5 bg-slate-900/70">
+        
+        <!-- Fila 1: Filtro de Periodo y Magnitud Mínima -->
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="feed-select" class="block text-[10px] font-semibold uppercase text-slate-400 mb-1">Período</label>
+            <select id="feed-select" class="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+              <option value="all_hour">Última hora (Todos)</option>
+              <option value="all_day" selected>Últimas 24h (Todos)</option>
+              <option value="2.5_day">Últimas 24h (M2.5+)</option>
+              <option value="4.5_day">Últimas 24h (M4.5+)</option>
+              <option value="all_week">Últimos 7 días (Todos)</option>
+              <option value="4.5_week">Últimos 7 días (M4.5+)</option>
+              <option value="significant_month">Últimos 30 días (Significativos)</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="min-mag-select" class="block text-[10px] font-semibold uppercase text-slate-400 mb-1">Magnitud mínima</label>
+            <select id="min-mag-select" class="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+              <option value="0" selected>Todas las magnitudes</option>
+              <option value="2.5">M ≥ 2.5 (Perceptibles)</option>
+              <option value="4.5">M ≥ 4.5 (Moderados)</option>
+              <option value="6.0">M ≥ 6.0 (Fuertes)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Fila 2: Filtro por Radio de Distancia desde mi ubicación -->
+        <div>
+          <label for="distance-filter-select" class="block text-[10px] font-semibold uppercase text-cyan-400 mb-1">
+            📍 Radio desde mi ubicación
+          </label>
+          <select id="distance-filter-select" class="w-full bg-slate-950 border border-cyan-500/40 rounded-lg px-2.5 py-1.5 text-xs text-cyan-300 focus:outline-none focus:border-cyan-400">
+            <option value="0" selected>🌍 Sin límite (Todo el mundo)</option>
+            <option value="250">A menos de 250 km de mí</option>
+            <option value="500">A menos de 500 km de mí</option>
+            <option value="1000">A menos de 1.000 km de mí</option>
+            <option value="2500">A menos de 2.500 km de mí</option>
+          </select>
+        </div>
+
+        <!-- Fila 3: Buscador por lugar / país -->
+        <div class="relative">
+          <input type="text" id="search-input" placeholder="Buscar país o lugar (ej: Chile, México, Tokio)..."
+                 class="w-full bg-slate-950 border border-slate-700/80 rounded-lg pl-8 pr-7 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+          <svg class="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <button id="clear-search-btn" class="absolute right-2 top-2 text-slate-500 hover:text-slate-300 text-xs">✕</button>
+        </div>
+
+        <!-- Fila 4: Orden de la lista -->
+        <div class="flex items-center justify-between gap-2 pt-0.5">
+          <span class="text-[11px] text-slate-400">Ordenar por:</span>
+          <select id="sort-select" class="bg-slate-950 border border-slate-700/80 rounded-lg px-2 py-1 text-xs text-slate-300 focus:outline-none">
+            <option value="time_desc" selected>Más reciente primero</option>
+            <option value="mag_desc">Mayor magnitud primero</option>
+            <option value="dist_asc">Más cercano a mí</option>
+            <option value="depth_asc">Menor profundidad (superficial)</option>
+            <option value="depth_desc">Mayor profundidad</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- RESUMEN DE ESTADÍSTICAS RÁPIDAS (KPIS) -->
+      <div class="grid grid-cols-4 gap-2 px-3.5 py-2.5 bg-slate-950/60 border-b border-slate-800 text-center shrink-0">
+        <div class="bg-slate-900/80 border border-slate-800/80 p-2 rounded-lg">
+          <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-semibold">Total</span>
+          <span id="stat-total-count" class="text-sm font-bold font-mono text-cyan-400">0</span>
+        </div>
+        <div class="bg-slate-900/80 border border-slate-800/80 p-2 rounded-lg col-span-2 text-left px-2.5">
+          <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-semibold">Mayor Sismo</span>
+          <div class="flex items-center gap-1.5 overflow-hidden">
+            <span id="stat-max-mag" class="text-sm font-bold font-mono text-rose-400 shrink-0">--</span>
+            <span id="stat-max-place" class="text-[10px] text-slate-300 truncate">Cargando...</span>
+          </div>
+        </div>
+        <div class="bg-slate-900/80 border border-slate-800/80 p-2 rounded-lg">
+          <span class="text-[9px] uppercase tracking-wider text-slate-400 block font-semibold">Tsunami</span>
+          <span id="stat-tsunami-count" class="text-sm font-bold font-mono text-slate-300">0</span>
+        </div>
+      </div>
+
+      <!-- LISTA DE SISMOS -->
+      <div id="quake-list-container" class="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+        <div class="p-8 text-center text-slate-400">
+          <div class="animate-spin w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+          <p class="text-xs">Sincronizando feed sísmico...</p>
+        </div>
+      </div>
+
+      <!-- PIE DEL PANEL LATERAL -->
+      <div class="p-2.5 border-t border-slate-800/80 bg-slate-950 flex items-center justify-between text-[11px] text-slate-500 shrink-0 px-3">
+        <span>SismoTracker Pro</span>
+        <button id="relocate-gps-btn" class="text-cyan-400 hover:text-cyan-300 text-[11px] font-medium flex items-center gap-1">
+          <span>📍</span> Centrar en mi GPS
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAPA PRINCIPAL -->
+    <main id="map-panel-container" class="flex-1 relative h-full w-full bg-slate-950">
+      
+      <!-- CONTENEDOR DEL MAPA LEAFLET -->
+      <div id="map-container" class="w-full h-full z-0"></div>
+
+      <!-- OVERLAY: CONTROLES FLOTANTES DEL MAPA -->
+      <div class="absolute top-4 left-4 z-10 flex flex-col gap-2">
+        <!-- Selector de Estilo de Mapa -->
+        <div class="bg-slate-900/90 backdrop-blur-md border border-slate-800/90 rounded-xl p-2 shadow-xl flex items-center gap-2">
+          <span class="text-[11px] text-slate-400 font-medium pl-1">Capa:</span>
+          <select id="map-theme-select" class="bg-slate-950 border border-slate-700/80 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none">
+            <option value="dark" selected>🌌 Oscuro</option>
+            <option value="light">☀️ Claro</option>
+            <option value="satellite">🛰️ Satelital</option>
+            <option value="osm">🗺️ Calles (OSM)</option>
+          </select>
+        </div>
+
+        <!-- Toggle de Placas Tectónicas -->
+        <label class="bg-slate-900/90 backdrop-blur-md border border-slate-800/90 rounded-xl px-3 py-1.5 shadow-xl flex items-center gap-2 cursor-pointer hover:bg-slate-850 transition-smooth">
+          <input type="checkbox" id="plates-toggle" checked class="w-3.5 h-3.5 rounded text-fuchsia-500 focus:ring-0 bg-slate-950 border-slate-700">
+          <span class="text-xs text-slate-300 font-medium">Placas Tectónicas</span>
+          <span class="w-3 h-0.5 bg-fuchsia-500 rounded-full inline-block"></span>
+        </label>
+      </div>
+
+      <!-- OVERLAY: LEYENDA DE MAGNITUDES -->
+      <div class="absolute bottom-6 right-4 z-10 bg-slate-900/90 backdrop-blur-md border border-slate-800/90 rounded-xl p-3 shadow-2xl max-w-xs text-xs">
+        <h4 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Escala de Magnitudes</h4>
+        <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shrink-0"></span>
+            <span class="text-slate-300">&lt; 2.5 Menor</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
+            <span class="text-slate-300">2.5 - 4.4 Leve</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
+            <span class="text-slate-300">4.5 - 5.9 Moderado</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></span>
+            <span class="text-slate-300">6.0 - 6.9 Fuerte</span>
+          </div>
+          <div class="flex items-center gap-1.5 col-span-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-fuchsia-500 animate-pulse shrink-0"></span>
+            <span class="text-slate-200 font-semibold">&ge; 7.0 Mayor / Catastrófico</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTÓN FLOTANTE VISTA MÓVIL -->
+      <div class="sm:hidden absolute bottom-5 left-1/2 transform -translate-x-1/2 z-20">
+        <button id="mobile-view-toggle" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full font-semibold text-xs shadow-2xl flex items-center gap-2 border border-cyan-400/40">
+          📋 Ver Lista
+        </button>
+      </div>
+
+      <!-- INDICADOR DE CARGA FLOTANTE -->
+      <div id="loading-indicator" class="hidden absolute top-4 right-14 z-20 bg-slate-900/90 border border-slate-700 px-3 py-1.5 rounded-full text-xs text-cyan-400 shadow-xl flex items-center gap-2">
+        <span class="animate-spin w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full"></span>
+        <span>Sincronizando...</span>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- ================= MODAL DE AJUSTES Y PERSONALIZACIÓN ================= -->
+  <div id="settings-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl text-slate-200">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl">⚙️</span>
+          <div>
+            <h3 class="text-lg font-bold text-white">Panel de Personalización</h3>
+            <p class="text-xs text-slate-400">Tus preferencias se guardan automáticamente en tu navegador</p>
+          </div>
+        </div>
+        <button id="close-settings-modal" class="text-slate-400 hover:text-white text-2xl p-1 leading-none">&times;</button>
+      </div>
+
+      <div class="space-y-6 text-sm">
+        
+        <!-- 1. SELECCIÓN DE TEMA VISUAL -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2.5">
+            🎨 Tema Visual de la Interfaz
+          </label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <button data-theme-choice="cyberpunk" class="p-3 rounded-xl border border-cyan-500/40 bg-slate-950 text-left hover:border-cyan-400 transition-smooth">
+              <span class="block text-sm font-bold text-cyan-300">⚡ Cyberpunk</span>
+              <span class="text-[10px] text-slate-400">Neón y magenta</span>
+            </button>
+            <button data-theme-choice="graphite" class="p-3 rounded-xl border border-slate-700 bg-slate-950 text-left hover:border-slate-500 transition-smooth">
+              <span class="block text-sm font-bold text-slate-200">⬛ Grafito</span>
+              <span class="text-[10px] text-slate-400">Minimalista</span>
+            </button>
+            <button data-theme-choice="tactical" class="p-3 rounded-xl border border-green-500/40 bg-slate-950 text-left hover:border-green-400 transition-smooth">
+              <span class="block text-sm font-bold text-green-400">🎯 Radar</span>
+              <span class="text-[10px] text-slate-400">Táctico militar</span>
+            </button>
+            <button data-theme-choice="light" class="p-3 rounded-xl border border-slate-300 bg-white text-left hover:border-slate-400 transition-smooth">
+              <span class="block text-sm font-bold text-slate-800">☀️ Claro</span>
+              <span class="text-[10px] text-slate-600">Alto contraste</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. ALERTAS SONORAS PERSONALIZADAS -->
+        <div class="border-t border-slate-800/80 pt-5">
+          <label class="block text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2.5">
+            🔊 Efectos de Sonido y Alarma
+          </label>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <span class="block text-[11px] text-slate-400 mb-1">Tipo de Sonido</span>
+              <select id="setting-sound-type" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                <option value="alarm">🚨 Alarma Sísmica (Pulsante)</option>
+                <option value="chime">🔔 Campanilla Zen (Armónica)</option>
+                <option value="synth">⚡ Sintetizador Cyberpunk</option>
+              </select>
+            </div>
+
+            <div>
+              <span class="block text-[11px] text-slate-400 mb-1">Magnitud mínima para sonar</span>
+              <select id="setting-sound-minmag" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+                <option value="4.0">M ≥ 4.0 (Moderados)</option>
+                <option value="5.0" selected>M ≥ 5.0 (Fuertes)</option>
+                <option value="6.0">M ≥ 6.0 (Grandes sismos)</option>
+              </select>
+            </div>
+
+            <div class="sm:col-span-2 flex items-center justify-between gap-4 bg-slate-950/70 p-3 rounded-xl border border-slate-800">
+              <div class="flex-1">
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                  <span>Volumen</span>
+                  <span class="font-mono text-cyan-400">Ajustable</span>
+                </div>
+                <input type="range" id="setting-sound-volume" min="0.1" max="1" step="0.1" value="0.5" class="w-full accent-cyan-500">
+              </div>
+              <button id="test-sound-btn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg text-white shrink-0 border border-slate-700 transition-smooth">
+                🔊 Probar Sonido
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. NOTIFICACIONES PUSH DEL NAVEGADOR -->
+        <div class="border-t border-slate-800/80 pt-5">
+          <label class="block text-xs font-bold uppercase tracking-wider text-cyan-400 mb-1.5">
+            📲 Notificaciones Push en Escritorio
+          </label>
+          <div class="flex items-center justify-between gap-4 bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+            <div>
+              <p class="text-xs text-slate-300">Recibe una notificación aunque tengas la pestaña en segundo plano</p>
+              <span id="push-permission-status" class="text-xs text-slate-400 font-medium block mt-1">Verificando permiso...</span>
+            </div>
+            <button id="request-push-btn" class="px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-500 hover:to-sky-500 text-white rounded-lg text-xs font-bold shrink-0 shadow-lg shadow-cyan-600/20">
+              Activar Alertas
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. UNIDADES Y TIEMPO DE REFRESCO -->
+        <div class="border-t border-slate-800/80 pt-5 grid grid-cols-2 gap-4">
+          <div>
+            <label for="setting-unit-depth" class="block text-[11px] font-bold uppercase text-slate-400 mb-1">Unidades</label>
+            <select id="setting-unit-depth" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+              <option value="km" selected>Kilómetros (km)</option>
+              <option value="mi">Millas (mi)</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="setting-refresh-interval" class="block text-[11px] font-bold uppercase text-slate-400 mb-1">Refresco automático</label>
+            <select id="setting-refresh-interval" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+              <option value="30">Cada 30 segundos</option>
+              <option value="60" selected>Cada 60 segundos</option>
+              <option value="120">Cada 2 minutos</option>
+              <option value="0">Desactivado (manual)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- BOTÓN CERRAR -->
+        <div class="pt-4 border-t border-slate-800 flex justify-end">
+          <button onclick="document.getElementById('settings-modal').classList.add('hidden')"
+                  class="px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-cyan-500/20">
+            Listo, guardar preferencias
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL DE INFORMACIÓN Y PROTOCOLOS ================= -->
+  <div id="info-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 shadow-2xl text-slate-200">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl">📖</span>
+          <h3 class="text-lg font-bold text-white">Guía Sísmica y Protocolos de Emergencia</h3>
+        </div>
+        <button id="close-info-modal" class="text-slate-400 hover:text-white text-xl p-1">&times;</button>
+      </div>
+
+      <div class="space-y-4 text-sm">
+        <div>
+          <h4 class="font-semibold text-cyan-400 mb-1">¿De dónde provienen los datos?</h4>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Esta aplicación se conecta directamente a la API en tiempo real del <strong>Servicio Geológico de los Estados Unidos (USGS)</strong>. Los sismos se actualizan automáticamente con cálculos oficiales de magnitud, profundidad y coordenadas.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="font-semibold text-amber-400 mb-1">¿Qué hacer DURANTE un temblor o terremoto?</h4>
+          <ul class="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
+            <li><strong>Agáchate, Cúbrete y Sujétate:</strong> Busca refugio bajo una mesa firme o escritorio.</li>
+            <li><strong>Aléjate de ventanas</strong>, vidrios y objetos pesados que puedan caer.</li>
+            <li><strong>Si estás en la calle:</strong> Aléjate de edificios, postes de electricidad y cables.</li>
+            <li><strong>No uses elevadores</strong> bajo ninguna circunstancia.</li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="font-semibold text-rose-400 mb-1">¿Qué hacer DESPUÉS del sismo?</h4>
+          <ul class="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
+            <li>Cierra llaves de paso de gas y agua si detectas olor o fugas.</li>
+            <li><strong>En zona costera:</strong> Si el sismo duró más de 1 minuto o dificultó mantenerse en pie, <strong>evacúa de inmediato hacia zonas altas</strong> ante riesgo inminente de tsunami.</li>
+            <li>Mantente informado a través de canales y autoridades oficiales.</li>
+          </ul>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800 flex justify-end">
+          <button onclick="document.getElementById('info-modal').classList.add('hidden')"
+                  class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold">
+            Entendido
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS DE LA APLICACIÓN -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="js/api.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

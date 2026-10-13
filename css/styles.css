@@ -1,0 +1,209 @@
+/* styles.css - Personalización, temas y efectos visuales */
+
+/* ================== VARIABLES DE TEMAS ================== */
+:root {
+  --color-bg-base: #060814;
+  --color-bg-card: rgba(13, 17, 38, 0.85);
+  --color-border: rgba(56, 189, 248, 0.2);
+  --color-accent-neon: #00f2fe;
+  --color-accent-secondary: #ec4899;
+  --color-text-main: #f8fafc;
+  --glow-primary: 0 0 20px rgba(0, 242, 254, 0.35);
+}
+
+/* Tema Cyberpunk Neón (Predeterminado) */
+body.theme-cyberpunk {
+  --color-bg-base: #050614;
+  --color-bg-card: rgba(15, 18, 45, 0.88);
+  --color-border: rgba(0, 242, 254, 0.25);
+  --color-accent-neon: #00f2fe;
+  --color-accent-secondary: #d946ef;
+  --glow-primary: 0 0 25px rgba(0, 242, 254, 0.4);
+}
+
+/* Tema Grafito Minimalista */
+body.theme-graphite {
+  --color-bg-base: #09090b;
+  --color-bg-card: rgba(24, 24, 27, 0.85);
+  --color-border: rgba(63, 63, 70, 0.4);
+  --color-accent-neon: #a1a1aa;
+  --color-accent-secondary: #e4e4e7;
+  --glow-primary: none;
+}
+
+/* Tema Radar Táctico */
+body.theme-tactical {
+  --color-bg-base: #041009;
+  --color-bg-card: rgba(6, 28, 16, 0.9);
+  --color-border: rgba(34, 197, 94, 0.25);
+  --color-accent-neon: #22c55e;
+  --color-accent-secondary: #eab308;
+  --glow-primary: 0 0 20px rgba(34, 197, 94, 0.35);
+}
+
+/* Tema Claro */
+body.theme-light {
+  --color-bg-base: #f8fafc;
+  --color-bg-card: rgba(255, 255, 255, 0.95);
+  --color-border: rgba(203, 213, 225, 0.8);
+  --color-accent-neon: #0284c7;
+  --color-accent-secondary: #db2777;
+  --color-text-main: #0f172a;
+  --glow-primary: none;
+}
+
+body.theme-light .text-slate-100,
+body.theme-light .text-white {
+  color: #0f172a !important;
+}
+
+body.theme-light .text-slate-300,
+body.theme-light .text-slate-200 {
+  color: #334155 !important;
+}
+
+body.theme-light .bg-slate-900,
+body.theme-light .bg-slate-950 {
+  background-color: #f1f5f9 !important;
+}
+
+body.theme-light .bg-slate-900\/90,
+body.theme-light .bg-slate-900\/80,
+body.theme-light .bg-slate-950\/60 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+body.theme-light .border-slate-800,
+body.theme-light .border-slate-800\/80 {
+  border-color: #cbd5e1 !important;
+}
+
+/* Resplandor neón */
+.neon-glow {
+  box-shadow: var(--glow-primary);
+}
+
+.neon-text {
+  text-shadow: 0 0 10px rgba(0, 242, 254, 0.6);
+}
+
+/* Animación de pulso para sismos de alta intensidad */
+.earthquake-marker-pulse {
+  animation: marker-glow 1.4s infinite ease-in-out;
+}
+
+@keyframes marker-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(236, 72, 153, 0.9)) drop-shadow(0 0 10px rgba(0, 242, 254, 0.8));
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(236, 72, 153, 1)) drop-shadow(0 0 24px rgba(0, 242, 254, 1));
+  }
+}
+
+/* Marcador de ubicación del usuario (Punto GPS pulsante) */
+.user-location-marker {
+  width: 18px;
+  height: 18px;
+  background: #00f2fe;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 15px #00f2fe;
+  position: relative;
+}
+
+.user-location-marker::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #00f2fe;
+  animation: radar-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes radar-ping {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+/* Scrollbar moderna y personalizada */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(10, 14, 30, 0.6);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.4);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.7);
+}
+
+/* Personalización del Popup de Leaflet */
+.leaflet-popup-content-wrapper {
+  background: #090d24 !important;
+  color: #f8fafc !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(0, 242, 254, 0.3) !important;
+  box-shadow: 0 20px 30px -5px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 242, 254, 0.2) !important;
+  padding: 0 !important;
+  backdrop-filter: blur(12px);
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.leaflet-popup-tip {
+  background: #090d24 !important;
+  border: 1px solid rgba(0, 242, 254, 0.3) !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  top: 10px !important;
+  right: 10px !important;
+  color: #94a3b8 !important;
+  font-size: 18px !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+  color: #00f2fe !important;
+  background: rgba(0, 242, 254, 0.1) !important;
+}
+
+/* Tarjeta seleccionada en la lista lateral */
+.quake-card-active {
+  border-color: #00f2fe !important;
+  background-color: rgba(0, 242, 254, 0.12) !important;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.25), inset 0 0 8px rgba(0, 242, 254, 0.1);
+}
+
+/* Transiciones suaves */
+.transition-smooth {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Fondo del mapa Leaflet en modo oscuro */
+.leaflet-container {
+  background-color: #1a1a1a !important;
+}
